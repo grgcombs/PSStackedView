@@ -36,6 +36,7 @@ typedef void(^PSSVSimpleBlock)(void);
 
 @implementation PSStackedViewController
 
+@synthesize topOffset = topOffset_;
 @synthesize leftInset = leftInset_;
 @synthesize largeLeftInset = largeLeftInset_;
 @synthesize viewControllers = viewControllers_;
@@ -61,6 +62,7 @@ typedef void(^PSSVSimpleBlock)(void);
         // set some reasonble defaults
         leftInset_ = 60;
         largeLeftInset_ = 200;
+        topOffset_ = 0;
         
         // add a gesture recognizer to detect dragging to the guest controllers
         UIPanGestureRecognizer *panRecognizer = [[[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePanFrom:)] autorelease];
@@ -69,8 +71,13 @@ typedef void(^PSSVSimpleBlock)(void);
         [panRecognizer setDelaysTouchesEnded:YES];
         [panRecognizer setCancelsTouchesInView:YES];
         panRecognizer.delegate = self;
-        [self.view addGestureRecognizer:panRecognizer];
         self.panRecognizer = panRecognizer;
+        
+        // delay this until the next run loop, so that subclasses can fully initialize before viewDidLoad is called.
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+            [self.view addGestureRecognizer:self.panRecognizer]; 
+        }];
+
         
         
         
@@ -146,7 +153,7 @@ typedef void(^PSSVSimpleBlock)(void);
 
 - (CGRect)viewRect {
     // self.view.frame not used, it's wrong in viewWillAppear
-    CGRect viewRect = [[UIScreen mainScreen] applicationFrame];
+    CGRect viewRect = self.view.frame;//[[UIScreen mainScreen] applicationFrame];
     return viewRect;
 }
 
@@ -160,6 +167,7 @@ typedef void(^PSSVSimpleBlock)(void);
 - (CGFloat)screenHeight {
     CGRect viewRect = [self viewRect];
     NSUInteger screenHeight = PSIsLandscape() ? viewRect.size.width : viewRect.size.height;
+    screenHeight -= topOffset_;
     return screenHeight;
 }
 
@@ -855,7 +863,7 @@ enum {
     }
     
     // Starting out in portrait, right side up, we see a 20 pixel gap (for status bar???)
-    viewController.view.top = 0.f;
+    viewController.view.top = topOffset_;
     
     [self delegateWillInsertViewController:viewController];
     
@@ -1286,7 +1294,10 @@ enum {
     // embedding rootViewController
     if (self.rootViewController) {
         [self.view addSubview:self.rootViewController.view];
-        self.rootViewController.view.frame = self.view.bounds;
+        CGRect subRect = self.view.bounds;
+        subRect.origin.y = topOffset_;
+        subRect.size.height -= topOffset_;
+        self.rootViewController.view.frame = subRect;
         self.rootViewController.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     }
     

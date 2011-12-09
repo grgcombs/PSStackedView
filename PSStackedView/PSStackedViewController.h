@@ -145,6 +145,8 @@ enum {
 /// animate setting of large left inset
 - (void)setLargeLeftInset:(NSUInteger)largeLeftInset animated:(BOOL)animated;
 
+@property(nonatomic, assign) NSUInteger topOffset;
+
 // compatibility with UINavigationBar -- returns nil
 #ifdef ALLOW_SWIZZLING_NAVIGATIONCONTROLLER
 @property(nonatomic, assign) UINavigationBar *navigationBar;
