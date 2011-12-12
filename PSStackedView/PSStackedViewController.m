@@ -36,6 +36,7 @@ typedef void(^PSSVSimpleBlock)(void);
 
 @implementation PSStackedViewController
 
+@synthesize alwaysOnTopSubview = alwaysOnTopSubview_;
 @synthesize topOffset = topOffset_;
 @synthesize leftInset = leftInset_;
 @synthesize largeLeftInset = largeLeftInset_;
@@ -92,6 +93,7 @@ typedef void(^PSSVSimpleBlock)(void);
 }
 
 - (void)dealloc {
+    self.alwaysOnTopSubview = nil;
     delegate_ = nil;
     panRecognizer_.delegate = nil;
     // remove all view controllers the hard way (w/o calling delegate)
@@ -884,7 +886,10 @@ enum {
         container.transform = CGAffineTransformMakeScale(1.2, 1.2); // large but fade in
     }
     
-    [self.view addSubview:container];
+    if (self.alwaysOnTopSubview)
+        [self.view insertSubview:container belowSubview:alwaysOnTopSubview_];
+    else
+        [self.view addSubview:container];
     
     if (animated) {
         [UIView animateWithDuration:kPSSVStackAnimationPushDuration delay:0.f options:UIViewAnimationOptionAllowUserInteraction animations:^{
@@ -1354,6 +1359,7 @@ enum {
     [self.rootViewController.view removeFromSuperview];
     self.rootViewController.view = nil;
     [self.rootViewController viewDidUnload];
+    self.alwaysOnTopSubview = nil;
     
     for (UIViewController *controller in self.viewControllers) {
         [controller.view removeFromSuperview];

@@ -147,6 +147,8 @@ enum {
 
 @property(nonatomic, assign) NSUInteger topOffset;
 
+@property(nonatomic, retain) UIView *alwaysOnTopSubview;
+
 // compatibility with UINavigationBar -- returns nil
 #ifdef ALLOW_SWIZZLING_NAVIGATIONCONTROLLER
 @property(nonatomic, assign) UINavigationBar *navigationBar;
