@@ -30,7 +30,7 @@ enum {
     
     // stack state
     CGFloat floatIndex_;
-    NSMutableArray *viewControllers_;
+    NSMutableArray *stackedViewControllers_;
     
     // internal drag state handling and other messy details
     PSSVSnapOption lastDragOption_;
