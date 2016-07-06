@@ -6,10 +6,12 @@
 //  Copyright 2011 Peter Steinberger. All rights reserved.
 //
 
+#import "PSStackedViewController.h"
 #import "PSStackedView.h"
 #import "UIViewController+PSStackedView.h"
 #import <QuartzCore/QuartzCore.h>
 #import <objc/runtime.h>
+#include <math.h>
 
 #define kPSSVStackAnimationSpeedModifier 0.5f // DEBUG!
 #define kPSSVStackAnimationDuration kPSSVStackAnimationSpeedModifier * 0.25f
@@ -26,7 +28,7 @@
 // prevents me getting crazy
 typedef void(^PSSVSimpleBlock)(void);
 
-@interface PSStackedViewController() <UIGestureRecognizerDelegate>
+@interface PSStackedViewController()
 @property(nonatomic, strong) UIViewController *rootViewController;
 @property(nonatomic, strong) NSMutableArray* viewControllers;
 @property(nonatomic, assign) NSInteger firstVisibleIndex;
@@ -263,9 +265,9 @@ enum {
 }typedef PSSVRoundOption;
 
 - (BOOL)isFloatIndexBetween:(CGFloat)floatIndex {
-    CGFloat intIndex, restIndex;
-    restIndex = modff(floatIndex, &intIndex);
-    BOOL isBetween = fabsf(restIndex - 0.5f) < EPSILON;
+    double intIndex = 0, restIndex = 0;
+    restIndex = modf(floatIndex, &intIndex);
+    BOOL isBetween = ABS(restIndex - 0.5f) < EPSILON;
     return isBetween;
 }
 
@@ -280,10 +282,10 @@ enum {
             isValid = contentWidth > [self screenWidth] - self.largeLeftInset;
         }else {
             NSUInteger stackCount = [self.viewControllers count];
-            CGFloat intIndex, restIndex;
-            restIndex = modff(floatIndex, &intIndex); // split e.g. 1.5 in 1.0 and 0.5
+            double intIndex = 0, restIndex = 0;
+            restIndex = modf(floatIndex, &intIndex); // split e.g. 1.5 in 1.0 and 0.5
             isValid = stackCount > intIndex && contentWidth > ([self screenWidth] - self.leftInset);
-            if (isValid && fabsf(restIndex - 0.5f) < EPSILON) {  // comparing floats -> if so, we have a .5 here
+            if (isValid && ABS(restIndex - 0.5f) < EPSILON) {  // comparing floats -> if so, we have a .5 here
                 if (ceilf(floatIndex) < stackCount) { // at the end?
                     CGFloat widthLeft = [[self.viewControllers objectAtIndex:floorf(floatIndex)] containerView].width;
                     CGFloat widthRight = [[self.viewControllers objectAtIndex:ceilf(floatIndex)] containerView].width;
@@ -298,9 +300,8 @@ enum {
 }
 
 - (CGFloat)nearestValidFloatIndex:(CGFloat)floatIndex round:(PSSVRoundOption)roundOption {
-    CGFloat roundedFloat;
-    CGFloat intIndex, restIndex;
-    restIndex = modff(floatIndex, &intIndex);
+    double roundedFloat = 0, intIndex = 0, restIndex = 0;
+    restIndex = modf(floatIndex, &intIndex);
     
     if (restIndex < 0.5f) {
         if (roundOption == PSSVRoundNearest) {
@@ -357,7 +358,7 @@ enum {
             }
         }
         
-        if (fabsf(validLowIndex - roundedFloat) < fabsf(validHighIndex - roundedFloat)) {
+        if (ABS(validLowIndex - roundedFloat) < ABS(validHighIndex - roundedFloat)) {
             roundedFloat = validLowIndex;
         }else {
             roundedFloat = validHighIndex;
@@ -438,7 +439,7 @@ enum {
     NSMutableArray *modifiedFrames = [NSMutableArray arrayWithArray:frames];
     
     CGRect prevFrame;
-    for (int i = index; i < [modifiedFrames count]; i++) {
+    for (NSUInteger i = index; i < [modifiedFrames count]; i++) {
         CGRect vcFrame = [[modifiedFrames objectAtIndex:i] CGRectValue];
         if (i == index) {
             vcFrame.origin.x = newLeft;
@@ -522,7 +523,7 @@ enum {
     if (overlappedVC) {
         UIViewController *rightVC = [self nextViewController:overlappedVC];
         PSSVLog(@"overlapping %@ with %@", NSStringFromCGRect(overlappedVC.containerView.frame), NSStringFromCGRect(rightVC.containerView.frame));
-        overlapRatio = fabsf(overlappedVC.containerView.right - rightVC.containerView.left)/overlappedVC.containerView.width;
+        overlapRatio = ABS(overlappedVC.containerView.right - rightVC.containerView.left)/overlappedVC.containerView.width;
     }
     return overlapRatio;
 }
@@ -693,7 +694,7 @@ enum {
         if (overlappedVC) {
             UIViewController *rightVC = [self nextViewController:overlappedVC];
             PSSVLog(@"overlapping %@ with %@", NSStringFromCGRect(overlappedVC.containerView.frame), NSStringFromCGRect(rightVC.containerView.frame));
-            overlapRatio = fabsf(overlappedVC.containerView.right - rightVC.containerView.left)/(overlappedVC.containerView.right - ([self screenWidth] - rightVC.containerView.width));
+            overlapRatio = ABS(overlappedVC.containerView.right - rightVC.containerView.left)/(overlappedVC.containerView.right - ([self screenWidth] - rightVC.containerView.width));
         }
         
         // only update ratio if < 1 (else we move sth else)
@@ -704,7 +705,7 @@ enum {
             UIViewController *lastVC = [self.visibleViewControllers lastObject];
             UIViewController *prevVC = [self previousViewController:lastVC];
             if (lastVC && prevVC && lastVC.containerView.right > [self screenWidth]) {
-                overlapRatio = fabsf(([self screenWidth] - lastVC.containerView.left)/([self screenWidth] - (self.leftInset + prevVC.containerView.width)))*.5f;
+                overlapRatio = ABS(([self screenWidth] - lastVC.containerView.left)/([self screenWidth] - (self.leftInset + prevVC.containerView.width)))*.5f;
                 floatIndex += overlapRatio;
             }
         }
@@ -738,7 +739,7 @@ enum {
         
         // we only want to move full pixels - but if we drag slowly, 1 get divided to zero.
         // so only omit every second event
-        if (abs(offset) == 1) {
+        if (ABS(offset) == 1) {
             if(!lastDragDividedOne_) {
                 lastDragDividedOne_ = YES;
                 offset = 0;
@@ -1040,7 +1041,7 @@ enum {
     if (firstVCLeft > [self currentLeftInset] || firstVCLeft < [self currentLeftInset]) {
         gridOffset = firstVCLeft - [self currentLeftInset];
     }else {
-        NSUInteger targetIndex = self.firstVisibleIndex; // default, abs(gridOffset) < 1
+        NSUInteger targetIndex = self.firstVisibleIndex; // default, ABS(gridOffset) < 1
         
         UIViewController *overlappedVC = [self overlappedViewController];
         if (overlappedVC) {
@@ -1060,7 +1061,7 @@ enum {
 
 /// detect if last drag offset is large enough that we should make a snap animation
 - (BOOL)shouldSnapAnimate {
-    BOOL shouldSnapAnimate = abs(lastDragOffset_) > 10;
+    BOOL shouldSnapAnimate = ABS(lastDragOffset_) > 10;
     return shouldSnapAnimate;
 }
 
@@ -1248,7 +1249,7 @@ enum {
 }
 
 - (NSUInteger)expandStack:(NSInteger)steps animated:(BOOL)animated; { // (---> decreases firstVisibleIndex)
-    steps = abs(steps); // normalize
+    steps = ABS(steps); // normalize
     PSSVLog(@"expanding stack with %d steps [%d-%d]", steps, self.firstVisibleIndex, self.lastVisibleIndex);
     
     CGFloat newFloatIndex = self.floatIndex;

@@ -18,7 +18,8 @@ enum {
 } typedef PSSVSnapOption;
 
 /// StackController hosing a backside rootViewController and the stacked controllers
-@interface PSStackedViewController : UIViewController {
+@interface PSStackedViewController : UIViewController<UIGestureRecognizerDelegate>
+{
     // internal drag state handling and other messy details
     PSSVSnapOption lastDragOption_;
     BOOL snapBackFromLeft_;
